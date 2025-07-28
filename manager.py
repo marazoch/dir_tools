@@ -1,15 +1,13 @@
 import argparse
 from features import copy, delete, count, find
 
-
-
-
 commands = {
     'copy': copy,
     'delete': delete,
     'count': count,
     'find': find,
 }
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -18,7 +16,6 @@ def main():
         epilog='for more information visit https://github.com/marazoch/dir_tools'
     )
     subparsers = parser.add_subparsers(dest='command', required=True)
-
 
     p = subparsers.add_parser('copy', help='Copy file')
     p.add_argument('-s', '--src', required=True, help='file source')
@@ -29,7 +26,6 @@ def main():
 
     p = subparsers.add_parser('count', help='Count files')
     p.add_argument('-p', '--path', required=True, metavar='', help='path to file')
-
 
     args = parser.parse_args()
     commands[args.command].run(args)
