@@ -1,2 +1,4 @@
-# dir_tools
-Project for dir managment
+# File Manager CLI
+
+A simple and extensible terminal-based file manager.
+
