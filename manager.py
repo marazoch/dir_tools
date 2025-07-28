@@ -6,6 +6,8 @@ commands = {
     'delete': delete,
     'count': count,
     'find': find,
+    'add_date': NotImplemented,
+    'analyse': NotImplemented
 }
 
 
