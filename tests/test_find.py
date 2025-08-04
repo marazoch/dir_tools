@@ -1,0 +1,56 @@
+import unittest
+import os
+import shutil
+import argparse
+from features import find
+
+class TestFind(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = 'test_find_argparse'
+        os.makedirs(os.path.join(self.test_dir, 'subdir'), exist_ok=True)
+
+        # Preparing for test
+        with open(os.path.join(self.test_dir, 'a.txt'), 'w') as f:
+            f.write('abc')
+
+        with open(os.path.join(self.test_dir, 'b.md'), 'w') as f:
+            f.write('markdown')
+
+        with open(os.path.join(self.test_dir, 'subdir', 'c.txt'), 'w') as f:
+            f.write('nested')
+
+        # Emulate manager.py
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument('path')
+        self.parser.add_argument('regex')
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_find_txt_files(self):
+        args = self.parser.parse_args([self.test_dir, r'.*\.txt$'])
+        result = find.run(args)
+        basenames = [os.path.basename(path) for path in result]
+        self.assertIn('a.txt', basenames)
+        self.assertIn('c.txt', basenames)
+        self.assertNotIn('b.md', basenames)
+
+    def test_find_md_files(self):
+        args = self.parser.parse_args([self.test_dir, r'.*\.md$'])
+        result = find.run(args)
+        basenames = [os.path.basename(path) for path in result]
+        self.assertIn('b.md', basenames)
+        self.assertNotIn('a.txt', basenames)
+
+    def test_invalid_path(self):
+        args = self.parser.parse_args(['nonexistent', r'.*\.txt$'])
+        with self.assertRaises(FileNotFoundError):
+            find.run(args)
+
+    def test_invalid_regex(self):
+        args = self.parser.parse_args([self.test_dir, r'*invalid['])
+        with self.assertRaises(ValueError):
+            find.run(args)
+
+if __name__ == '__main__':
+    unittest.main()
