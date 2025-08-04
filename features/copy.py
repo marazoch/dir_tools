@@ -9,6 +9,9 @@ def run(args):
     if not os.path.exists(src):
         raise FileNotFoundError(f"Source file does not exist: {src}")
 
+    if not os.path.isdir(dst):
+        raise NotADirectoryError(f"Path is not a directory: {dst}")
+
     if os.path.isdir(dst):
         filename = os.path.basename(src)
         dst_file = os.path.join(dst, filename)
@@ -23,5 +26,7 @@ def run(args):
     except PermissionError as e:
         raise PermissionError(
             f"Permission denied while copying '{src}' to '{dst_file}': {e}. Maybe you forget filename in {src}")
+
+    print(f"File {src} copied to {dst}")
 
     return dst_file

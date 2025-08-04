@@ -24,10 +24,14 @@ def main():
     p.add_argument('-d', '--dst', required=True, metavar='', help='copy destination')
 
     p = subparsers.add_parser('delete', help='Delete file or dir')
-    p.add_argument('-s', '--src', required=True, metavar='', help='file source')
+    p.add_argument('-s', '--src', required=True, metavar='', help='file source to delete')
 
     p = subparsers.add_parser('count', help='Count files')
-    p.add_argument('-p', '--path', required=True, metavar='', help='path to file')
+    p.add_argument('-p', '--path', required=True, metavar='', help='path to folder to count')
+
+    p = subparsers.add_parser('find', help='Find file by name')
+    p.add_argument('-p', '--path', required=True, metavar='', help='path to folder for search')
+    p.add_argument('-r', '--regex', required=True, metavar='', help='filename regex to find')
 
     args = parser.parse_args()
     commands[args.command].run(args)
