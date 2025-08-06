@@ -1,5 +1,5 @@
 import argparse
-from features import copy, delete, count, find, move, add_date
+from features import copy, delete, count, find, move, add_date, analyse
 
 commands = {
     'copy': copy,
@@ -8,7 +8,7 @@ commands = {
     'find': find,
     'move': move,
     'add_date': add_date,
-    'analyse': NotImplemented
+    'analyse': analyse
 }
 
 
@@ -43,6 +43,9 @@ def main():
     parser_add_date.add_argument('-p', '--path', required=True, metavar='', help="path to file or folder")
     parser_add_date.add_argument('-r', '--recursive', action='store_true',
                                  help='process all subdirectories')
+
+    parser_analyse = subparsers.add_parser('analyse', help='Analyse files in dir')
+    parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
 
     args = parser.parse_args()
     commands[args.command].run(args)
