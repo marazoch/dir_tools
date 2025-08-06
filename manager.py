@@ -1,5 +1,5 @@
 import argparse
-from features import copy, delete, count, find, move
+from features import copy, delete, count, find, move, add_date
 
 commands = {
     'copy': copy,
@@ -7,7 +7,7 @@ commands = {
     'count': count,
     'find': find,
     'move': move,
-    'add_date': NotImplemented,
+    'add_date': add_date,
     'analyse': NotImplemented
 }
 
@@ -38,6 +38,11 @@ def main():
     parser_move = subparsers.add_parser("move", help="Move file or folder")
     parser_move.add_argument('-s', '--src', required=True, metavar='', help='source path')
     parser_move.add_argument('-d', '--dst', required=True, metavar='', help='destination folder')
+
+    parser_add_date = subparsers.add_parser('add_date', help='Rename file(s) with creation date')
+    parser_add_date.add_argument('-p', '--path', required=True, metavar='', help="path to file or folder")
+    parser_add_date.add_argument('-r', '--recursive', action='store_true',
+                                 help='process all subdirectories')
 
     args = parser.parse_args()
     commands[args.command].run(args)
