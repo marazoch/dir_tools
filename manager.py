@@ -18,21 +18,22 @@ def main():
         description='simple file manager',
         epilog='for more information visit https://github.com/marazoch/dir_tools'
     )
+
     subparsers = parser.add_subparsers(dest='command', required=True, metavar='command')
 
-    p = subparsers.add_parser('copy', help='Copy file to destination folder')
-    p.add_argument('-s', '--src', required=True, metavar='', help='file source')
-    p.add_argument('-d', '--dst', required=True, metavar='', help='destination folder')
+    parser_copy = subparsers.add_parser('copy', help='Copy file to destination folder')
+    parser_copy.add_argument('-s', '--src', required=True, metavar='', help='file source')
+    parser_copy.add_argument('-d', '--dst', required=True, metavar='', help='destination folder')
 
-    p = subparsers.add_parser('delete', help='Delete file or folder')
-    p.add_argument('-s', '--src', required=True, metavar='', help='file source to delete')
+    parser_delete = subparsers.add_parser('delete', help='Delete file or folder')
+    parser_delete.add_argument('-s', '--src', required=True, metavar='', help='file source to delete')
 
-    p = subparsers.add_parser('count', help='Count files in folder')
-    p.add_argument('-p', '--path', required=True, metavar='', help='path to folder to count')
+    parser_count = subparsers.add_parser('count', help='Count files in folder')
+    parser_count.add_argument('-p', '--path', required=True, metavar='', help='path to folder to count')
 
-    p = subparsers.add_parser('find', help='Find file by name')
-    p.add_argument('-p', '--path', required=True, metavar='', help='path to folder for search')
-    p.add_argument('-r', '--regex', required=True, metavar='', help='filename regex to find')
+    parser_find = subparsers.add_parser('find', help='Find file by name')
+    parser_find.add_argument('-p', '--path', required=True, metavar='', help='path to folder for search')
+    parser_find.add_argument('-r', '--regex', required=True, metavar='', help='filename regex to find')
 
     parser_move = subparsers.add_parser("move", help="Move file or folder")
     parser_move.add_argument('-s', '--src', required=True, metavar='', help='source path')

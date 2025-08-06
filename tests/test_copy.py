@@ -7,7 +7,7 @@ from features import copy as copy_feature
 
 class TestCopyCommand(unittest.TestCase):
     def setUp(self):
-        # Preparing for test
+        """Preparing for test"""
         self.test_dir = 'tests/data'
         self.src_file = os.path.join(self.test_dir, 'example.txt')
         self.dst_dir = self.test_dir  # та же папка
@@ -25,11 +25,12 @@ class TestCopyCommand(unittest.TestCase):
         self.parser.add_argument('-d', '--dst', required=True)
 
     def tearDown(self):
-        # Clean up test folders
+        """Clean up test folders"""
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
     def test_copy_to_other_folder(self):
+        """Check copy file"""
         other_dir = os.path.join(self.test_dir, 'copy_target')
         os.makedirs(other_dir, exist_ok=True)
         args = self.parser.parse_args(['-s', self.src_file, '-d', other_dir])
@@ -43,7 +44,7 @@ class TestCopyCommand(unittest.TestCase):
             self.assertEqual(f.read(), 'Hello, world!')
 
     def test_copy_to_same_folder_renamed(self):
-        # Create same file in dst folder
+        """Create same file in dst folder"""
         with open(self.dst_file, 'w') as f:
             f.write('Hello, world!')
 

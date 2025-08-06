@@ -6,10 +6,10 @@ from features import delete
 
 class TestDelete(unittest.TestCase):
     def setUp(self):
+        """Preparing for test"""
         self.test_dir = 'tests/data_delete'
         os.makedirs(self.test_dir, exist_ok=True)
 
-        # Preparing for test
         self.file_path = os.path.join(self.test_dir, 'file1.txt')
         with open(self.file_path, 'w') as f:
             f.write('Test file 1')
@@ -24,20 +24,24 @@ class TestDelete(unittest.TestCase):
         self.parser.add_argument('-s', '--src', required=True)
 
     def tearDown(self):
+        """Clean up test folders"""
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
     def test_delete_file(self):
+        """Check delete file"""
         args = self.parser.parse_args(['-s', self.file_path])
         delete.run(args)
         self.assertFalse(os.path.exists(self.file_path))
 
     def test_delete_directory(self):
+        """Check delete directory"""
         args = self.parser.parse_args(['-s', self.subdir])
         delete.run(args)
         self.assertFalse(os.path.exists(self.subdir))
 
     def test_delete_nonexistent(self):
+        """Check delete nothing"""
         args = self.parser.parse_args(['-s', 'nonexistent_path'])
         with self.assertRaises(FileNotFoundError):
             delete.run(args)
