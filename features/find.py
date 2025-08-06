@@ -1,5 +1,16 @@
 import os
 import re
+import logging
+
+log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+logging.basicConfig(
+    filename=os.path.join(log_dir, 'manager.log'),
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+
 
 def run(args):
     """
@@ -18,12 +29,16 @@ def run(args):
     path = args.path
     pattern = args.regex
 
+    logging.info(f'Find command started: path={path}, regex={pattern}')
+
     if not os.path.exists(path):
+        logging.error(f'Path does not exist: {path}')
         raise FileNotFoundError(f'Path does not exist: {path}')
 
     try:
         regex = re.compile(pattern)
-    except re.error:
+    except re.error as e:
+        logging.error(f'Invalid regex pattern {pattern}: {e}')
         raise ValueError(f'Invalid regular expression: {pattern}')
 
     matched_files = []
@@ -32,6 +47,8 @@ def run(args):
         for file in files:
             if regex.fullmatch(file):
                 matched_files.append(os.path.join(root, file))
+
+    logging.info(f'Find command completed: {len(matched_files)} files matched')
 
     for file in matched_files:
         print(file)
