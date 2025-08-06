@@ -1,5 +1,16 @@
 import argparse
+import os
+import logging
 from features import copy, delete, count, find, move, add_date, analyse
+
+log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+logging.basicConfig(
+    filename=os.path.join(log_dir, 'manager.log'),
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 
 commands = {
     'copy': copy,
@@ -43,9 +54,6 @@ def main():
     parser_add_date.add_argument('-p', '--path', required=True, metavar='', help="path to file or folder")
     parser_add_date.add_argument('-r', '--recursive', action='store_true',
                                  help='process all subdirectories')
-
-    parser_analyse = subparsers.add_parser('analyse', help='Analyse files in dir')
-    parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
 
     args = parser.parse_args()
     commands[args.command].run(args)
