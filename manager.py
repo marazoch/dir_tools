@@ -1,5 +1,16 @@
 import argparse
+import os
+import logging
 from features import copy, delete, count, find, move, add_date
+
+log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+logging.basicConfig(
+    filename=os.path.join(log_dir, 'manager.log'),
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 
 commands = {
     'copy': copy,
@@ -45,7 +56,13 @@ def main():
                                  help='process all subdirectories')
 
     args = parser.parse_args()
-    commands[args.command].run(args)
+
+    logging.info(f"Command executed: {args.command}, args={vars(args)}")
+    try:
+        commands[args.command].run(args)
+    except Exception as e:
+        logging.error(f"Error while executing {args.command}: {e}")
+        raise
 
 
 if __name__ == '__main__':
