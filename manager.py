@@ -61,12 +61,13 @@ def main():
     parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
 
     parser_hashsum = subparsers.add_parser('hashsum', help='Calculate hash of file or directory')
-    parser_hashsum.add_argument('-p', '--path', required=True, help='Path to file or directory')
-    parser_hashsum.add_argument('-m', '--method', choices=['sha256', 'md5'], default='sha256',
-                                help='Hash algorithm')
+    parser_hashsum.add_argument('-p', '--path', required=True, metavar='',
+                                help='Path to file or directory')
+    parser_hashsum.add_argument('-m', '--method', choices=['sha256', 'md5'], default='sha256', metavar='',
+                                help='Hash algorithm (sha256 or md5)')
 
     parser_duplicates = subparsers.add_parser('duplicates', help='Find duplicate files in directory')
-    parser_duplicates.add_argument('-p', '--path', required=True, help='Path to directory')
+    parser_duplicates.add_argument('-p', '--path', required=True, metavar='', help='Path to directory')
 
     args = parser.parse_args()
     commands[args.command].run(args)

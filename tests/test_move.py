@@ -5,6 +5,7 @@ import argparse
 
 from features import move
 
+
 class TestMove(unittest.TestCase):
 
     def setUp(self):

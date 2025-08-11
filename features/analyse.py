@@ -43,6 +43,7 @@ def get_size(path):
                 continue
     return total
 
+
 def convert_size(size_bytes):
     """
     Convert a file size in bytes to a human-readable string.
@@ -58,6 +59,7 @@ def convert_size(size_bytes):
         if size_bytes < 1024:
             return f'{round(size_bytes, 2)} {unit}'
         size_bytes /= 1024
+
 
 def run(args):
     """

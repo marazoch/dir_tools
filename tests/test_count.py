@@ -4,6 +4,7 @@ import shutil
 import argparse
 from features import count
 
+
 class TestCount(unittest.TestCase):
     def setUp(self):
         """Preparing for test"""
@@ -47,6 +48,7 @@ class TestCount(unittest.TestCase):
         args = self.parser.parse_args(['-p', file_path])
         with self.assertRaises(NotADirectoryError):
             count.run(args)
+
 
 if __name__ == '__main__':
     unittest.main()

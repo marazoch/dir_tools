@@ -9,6 +9,7 @@ from features import duplicates
 
 class OutputCapture:
     """A class to capture stdout output"""
+
     def __init__(self):
         self.output = ''
 

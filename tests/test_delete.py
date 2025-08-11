@@ -4,6 +4,7 @@ import shutil
 import argparse
 from features import delete
 
+
 class TestDelete(unittest.TestCase):
     def setUp(self):
         """Preparing for test"""
@@ -45,6 +46,7 @@ class TestDelete(unittest.TestCase):
         args = self.parser.parse_args(['-s', 'nonexistent_path'])
         with self.assertRaises(FileNotFoundError):
             delete.run(args)
+
 
 if __name__ == '__main__':
     unittest.main()
