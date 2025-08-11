@@ -1,13 +1,16 @@
 import unittest
 import os
+import sys
 import shutil
 import subprocess
+
 
 class TestAnalyseCommand(unittest.TestCase):
 
     def setUp(self):
         """Preparing for test"""
-        self.test_dir = 'test_analyse_dir'
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        self.test_dir = os.path.join(self.project_root, 'test_analyse_dir')
         os.makedirs(self.test_dir, exist_ok=True)
 
         for i in range(3):
@@ -21,10 +24,14 @@ class TestAnalyseCommand(unittest.TestCase):
 
     def test_analyse_command(self):
         """Check analyse feature"""
+        manager_path = os.path.join(self.project_root, 'manager.py')
+        python_executable = sys.executable
+
         result = subprocess.run(
-            ['python', 'C:\\file_manager\\dir_tools\\manager.py', 'analyse', '-p', self.test_dir],
+            [python_executable, manager_path, 'analyse', '-p', self.test_dir],
             capture_output=True,
-            text=True
+            text=True,
+            cwd=self.project_root
         )
 
         self.assertEqual(result.returncode, 0, msg=f'Error: {result.stderr}')
