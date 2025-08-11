@@ -1,7 +1,7 @@
 import argparse
 import os
 import logging
-from features import copy, delete, count, find, move, add_date
+from features import copy, delete, count, find, move, add_date, analyse
 
 log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
 os.makedirs(log_dir, exist_ok=True)
@@ -19,7 +19,7 @@ commands = {
     'find': find,
     'move': move,
     'add_date': add_date,
-    'analyse': NotImplemented
+    'analyse': analyse
 }
 
 
@@ -55,14 +55,11 @@ def main():
     parser_add_date.add_argument('-r', '--recursive', action='store_true',
                                  help='process all subdirectories')
 
-    args = parser.parse_args()
+    parser_analyse = subparsers.add_parser('analyse', help='Analyse files in dir')
+    parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
 
-    logging.info(f"Command executed: {args.command}, args={vars(args)}")
-    try:
-        commands[args.command].run(args)
-    except Exception as e:
-        logging.error(f"Error while executing {args.command}: {e}")
-        raise
+    args = parser.parse_args()
+    commands[args.command].run(args)
 
 
 if __name__ == '__main__':
