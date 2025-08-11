@@ -4,6 +4,7 @@ import sys
 import shutil
 import subprocess
 
+
 class TestCLI(unittest.TestCase):
     def setUp(self):
         """Preparing for test"""
@@ -103,6 +104,45 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn('full size:', result.stdout)
         self.assertIn('file0.txt', result.stdout)
+
+    def test_hashsum_file(self):
+        file_path = os.path.abspath(os.path.join(self.test_dir, 'file0.txt'))
+        args = ['hashsum', '-p', file_path, '-m', 'sha256']
+
+        result = self.run_command(args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn('sha256(', result.stdout)
+        self.assertIn('file0.txt', result.stdout)
+        output_hash = result.stdout.strip().split('=')[-1].strip()
+        self.assertEqual(len(output_hash), 64)
+
+    def test_hashsum_directory(self):
+        abs_test_dir = os.path.abspath(self.test_dir)
+        args = ['hashsum', '-p', abs_test_dir, '-m', 'md5']
+
+        result = self.run_command(args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn('md5(', result.stdout)
+        self.assertIn('file0.txt', result.stdout)
+
+    def test_duplicates(self):
+        file1 = os.path.abspath(os.path.join(self.test_dir, 'dup1.txt'))
+        file2 = os.path.abspath(os.path.join(self.test_dir, 'dup2.txt'))
+
+        content = 'duplicate content for testing'
+        with open(file1, 'w') as f:
+            f.write(content)
+        with open(file2, 'w') as f:
+            f.write(content)
+
+        args = ['duplicates', '-p', os.path.abspath(self.test_dir)]
+
+        result = self.run_command(args)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn('dup1.txt', result.stdout)
+        self.assertIn('dup2.txt', result.stdout)
+        self.assertIn('Duplicate files', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()
