@@ -33,5 +33,5 @@ class TestAnalyseCommand(unittest.TestCase):
         self.assertIn('file2.txt', result.stdout)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
