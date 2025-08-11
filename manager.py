@@ -1,7 +1,7 @@
 import argparse
 import os
 import logging
-from features import copy, delete, count, find, move, add_date, analyse
+from features import copy, delete, count, find, move, add_date, analyse, hashsum, duplicates
 
 log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
 os.makedirs(log_dir, exist_ok=True)
@@ -19,7 +19,9 @@ commands = {
     'find': find,
     'move': move,
     'add_date': add_date,
-    'analyse': analyse
+    'analyse': analyse,
+    'hashsum': hashsum,
+    'duplicates': duplicates,
 }
 
 
@@ -57,6 +59,14 @@ def main():
 
     parser_analyse = subparsers.add_parser('analyse', help='Analyse files in dir')
     parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
+
+    parser_hashsum = subparsers.add_parser('hashsum', help='Calculate hash of file or directory')
+    parser_hashsum.add_argument('-p', '--path', required=True, help='Path to file or directory')
+    parser_hashsum.add_argument('-m', '--method', choices=['sha256', 'md5'], default='sha256',
+                                help='Hash algorithm')
+
+    parser_duplicates = subparsers.add_parser('duplicates', help='Find duplicate files in directory')
+    parser_duplicates.add_argument('-p', '--path', required=True, help='Path to directory')
 
     args = parser.parse_args()
     commands[args.command].run(args)
