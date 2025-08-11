@@ -1,4 +1,15 @@
 import os
+import logging
+
+log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+logging.basicConfig(
+    filename=os.path.join(log_dir, 'manager.log'),
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+
 
 def get_size(path):
     """
@@ -20,13 +31,15 @@ def get_size(path):
     if os.path.isfile(path):
         return os.path.getsize(path)
     for root, dirs, files in os.walk(path):
-        for f in files:
+        for file in files:
             try:
-                fp = os.path.join(root, f)
-                total += os.path.getsize(fp)
+                file_path = os.path.join(root, file)
+                total += os.path.getsize(file_path)
             except FileNotFoundError:
+                logging.warning(f'File not found: {path}')
                 continue
             except PermissionError:
+                logging.warning(f'Permission denied: {path}')
                 continue
     return total
 
@@ -71,7 +84,10 @@ def run(args):
     """
     path = args.path
     path = os.path.abspath(path)
+    logging.info(f'Starting analyse for path: {path}')
+
     if not os.path.exists(path):
+        logging.error(f'Path does not exist: {path}')
         print(f'Path does not exist: {path}')
         return
 
@@ -86,6 +102,11 @@ def run(args):
         sizes.append((os.path.basename(entry_path), size))
         total_size += size
 
+    logging.info(f'Total size for {path}: {convert_size(total_size)}')
     print(f'full size: {convert_size(total_size)}')
+
     for name, size in sorted(sizes, key=lambda x: x[1], reverse=True):
+        logging.info(f'{name}: {convert_size(size)}')
         print(f' - {name}  -  {convert_size(size)}')
+
+    logging.info(f'Analyse completed for path: {path}')

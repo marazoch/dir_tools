@@ -55,6 +55,9 @@ def main():
     parser_add_date.add_argument('-r', '--recursive', action='store_true',
                                  help='process all subdirectories')
 
+    parser_analyse = subparsers.add_parser('analyse', help='Analyse files in dir')
+    parser_analyse.add_argument('-p', '--path', metavar='', required=True, help='path to file or folder')
+
     args = parser.parse_args()
     commands[args.command].run(args)
 
