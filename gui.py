@@ -2,8 +2,6 @@ import flet as ft
 from flet import Icons
 import os
 
-from flet.core.form_field_control import InputBorder
-
 
 def main(page: ft.Page):
     page.title = "File Manager (Total Commander style)"
@@ -11,13 +9,25 @@ def main(page: ft.Page):
     page.window_width = 1000
     page.window_height = 800
 
+    left_path = ft.TextField(
+        label="Left path",
+        value=os.getcwd(),
+        expand=True,
+        border=ft.border.all(1, "white"),
+        border_radius=3,
+        text_style=ft.TextStyle(color="white"),
+    )
 
-    left_path = ft.TextField(label="Left path", value=os.getcwd(),   expand=True, border_color="white")
-    right_path = ft.TextField(label="Right path", value=os.getcwd(), expand=True, border_color="white")
-
+    right_path = ft.TextField(
+        label="Right path",
+        value=os.getcwd(),
+        expand=True,
+        border=ft.border.all(1, "white"),
+        border_radius=3,
+        text_style=ft.TextStyle(color="white"),
+    )
 
     left_files = ft.ListView(expand=True, spacing=0, padding=0)
-
     right_files = ft.ListView(expand=True, spacing=0, padding=0)
 
     def load_files(path, listview: ft.ListView):
@@ -40,7 +50,6 @@ def main(page: ft.Page):
                 listview.controls.append(ft.Text(f"Error: {e}", color="red"))
         listview.update()
 
-
     def update_left_path(e):
         load_files(left_path.value, left_files)
 
@@ -50,23 +59,30 @@ def main(page: ft.Page):
     left_path.on_submit = update_left_path
     right_path.on_submit = update_right_path
 
-
     file_panels = ft.Row(
         [
             ft.Container(
                 content=ft.Column(
-                    [ft.Container(left_path, margin=ft.margin.only(bottom=2)), left_files],
+                    [
+                        ft.Container(left_path, margin=ft.margin.only(bottom=1)),
+                        left_files,
+                    ],
                     spacing=0,
-                    expand=True),
+                    expand=True,
+                ),
                 border=ft.border.all(1, "white"),
                 expand=True,
-                padding=5
+                padding=5,
             ),
             ft.Container(
                 content=ft.Column(
-                    [ft.Container(left_path, margin=ft.margin.only(bottom=2)), right_files],
+                    [
+                        ft.Container(right_path, margin=ft.margin.only(bottom=1)),
+                        right_files,
+                    ],
                     spacing=0,
-                    expand=True),
+                    expand=True,
+                ),
                 border=ft.border.all(1, "white"),
                 expand=True,
                 padding=5,
@@ -74,7 +90,7 @@ def main(page: ft.Page):
         ],
         expand=True,
         spacing=1,
-        tight=True
+        tight=True,
     )
 
     commands = [
@@ -98,6 +114,29 @@ def main(page: ft.Page):
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=15,
     )
+
+    button_map = {btn.text: btn for btn in buttons.controls}
+
+    hotkeys = {
+        "F1": "Copy",
+        "F2": "Move",
+        "F3": "Delete",
+        "F4": "Count",
+        "F5": "Find",
+        "F6": "Analyse",
+        "F7": "Add Date",
+        "F8": "Hashsum",
+        "F9": "Duplicates",
+    }
+
+    def handle_hotkey(e: ft.KeyboardEvent):
+        if e.key in hotkeys:
+            cmd = hotkeys[e.key]
+            btn = button_map.get(cmd)
+            if btn and btn.on_click:
+                btn.on_click(None)
+
+    page.on_keyboard_event = handle_hotkey
 
     page.add(file_panels, buttons)
 
