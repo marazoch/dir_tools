@@ -54,16 +54,22 @@ def main(page: ft.Page):
 
     def load_files(path, listview: ft.ListView, path_field):
         listview.controls.clear()
+
+        def open_item_handler(e):
+            item_name = e.control.data
+            open_item(path_field, listview, item_name)
+
         if os.path.isdir(path):
             try:
-                if os.path.dirname(path) != path:
+                if os.path.dirname(path) != path:  # добавляем ".."
                     listview.controls.append(
                         ft.GestureDetector(
                             content=ft.Row(
                                 [ft.Icon(ft.Icons.ARROW_UPWARD, color="white"), ft.Text("..", color="white")],
                                 spacing=10,
                             ),
-                            on_tap=lambda e: open_item(path_field, listview, ".."),
+                            data="..",
+                            on_tap=open_item_handler,
                         )
                     )
 
@@ -79,7 +85,8 @@ def main(page: ft.Page):
                                 [ft.Icon(icon, color="white"), ft.Text(name, color="white")],
                                 spacing=10,
                             ),
-                            on_tap=lambda e, n=name: open_item(path_field, listview, n),
+                            data=name,
+                            on_tap=open_item_handler,
                         )
                     )
             except Exception as e:
