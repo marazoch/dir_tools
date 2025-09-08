@@ -28,34 +28,50 @@ class ModalManager:
         self.page = page
 
         self.title = ft.Text("", weight=ft.FontWeight.BOLD, size=18, color="white")
-        self.body = ft.Column([], tight=True)
+        close_btn = ft.IconButton(
+            icon=ft.Icons.CLOSE, icon_color="white",
+            tooltip="Close",
+            on_click=lambda e: self.hide()
+        )
+        header = ft.Row(
+            [self.title, ft.Container(expand=True), close_btn],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10,
+        )
+
+        self.body = ft.Column([], tight=True, spacing=8, scroll=ft.ScrollMode.AUTO)
+        body_box = ft.Container(
+            self.body,
+            height=420,
+            padding=ft.padding.only(top=5, bottom=5),
+        )
+
         self.actions = ft.Row([], alignment=ft.MainAxisAlignment.END, spacing=10)
 
-        card = ft.Container(
-            content=ft.Column(
-                [
-                    self.title,
-                    ft.Divider(opacity=0.15),
-                    ft.Container(self.body, padding=ft.padding.only(top=5, bottom=10)),
-                    self.actions,
-                ],
-                tight=True,
-                spacing=10,
-            ),
+        self.card = ft.Container(
+            content=ft.Column([header, ft.Divider(opacity=0.15), body_box, self.actions],
+                              tight=True, spacing=10),
             bgcolor="#1e3d8f",
             border_radius=12,
             padding=20,
-            width=700,
+            width=720,
             shadow=ft.BoxShadow(blur_radius=20, color="black"),
         )
-
-        self.overlay = ft.Container(
-            visible=False,
-            expand=True,
-            bgcolor="rgba(0,0,0,0.55)",
-            alignment=ft.alignment.center,
-            content=card,
+        self.card_gd = ft.GestureDetector(
+            content=self.card,
+            on_tap=lambda e: None,  # глушим всплытие клика внутри карточки
         )
+
+        self.overlay = ft.GestureDetector(
+            content=ft.Container(
+                expand=True,
+                bgcolor="rgba(0,0,0,0.55)",
+                alignment=ft.alignment.center,
+                content=self.card_gd,
+            ),
+            on_tap=lambda e: self.hide(),
+        )
+        self.overlay.visible = False
 
     def mount_into(self, stack: ft.Stack):
         stack.controls.append(self.overlay)
@@ -72,10 +88,11 @@ class ModalManager:
         self.page.update()
 
     def show_text(self, title: str, text: str):
+        # текст кладём в прокручиваемое тело
         txt = ft.Text(text, color="white", selectable=True)
         self.show(
             title,
-            [ft.Container(txt, padding=0)],
+            [txt],
             [
                 ft.TextButton("Copy", on_click=lambda _e: self.page.set_clipboard(text)),
                 ft.FilledButton("Close", on_click=self.hide),
@@ -83,26 +100,16 @@ class ModalManager:
         )
 
     def prompt(self, title: str, fields: list[ft.Control], on_ok, ok_label="OK", ok_primary=True):
-        ok_btn = ft.FilledButton(ok_label, on_click=lambda e: (self.hide(), on_ok(e)))
-        if not ok_primary:
-            ok_btn = ft.TextButton(ok_label, on_click=lambda e: (self.hide(), on_ok(e)))
-        self.show(
-            title,
-            fields,
-            [
-                ft.TextButton("Cancel", on_click=self.hide),
-                ok_btn,
-            ],
-        )
+        ok_btn = ft.FilledButton(ok_label, on_click=lambda e: (self.hide(), on_ok(e))) if ok_primary \
+            else ft.TextButton(ok_label, on_click=lambda e: (self.hide(), on_ok(e)))
+        self.show(title, fields, [ft.TextButton("Cancel", on_click=self.hide), ok_btn])
 
     def confirm(self, title: str, text: str, on_yes, yes_label="Delete"):
         self.show(
             title,
             [ft.Text(text, color="white")],
-            [
-                ft.TextButton("Cancel", on_click=self.hide),
-                ft.FilledButton(yes_label, on_click=lambda e: (self.hide(), on_yes(e))),
-            ],
+            [ft.TextButton("Cancel", on_click=self.hide),
+             ft.FilledButton(yes_label, on_click=lambda e: (self.hide(), on_yes(e)))],
         )
 
 
@@ -127,6 +134,16 @@ def main(page: ft.Page):
                 duration=3000,
             )
         )
+
+    def human_size(n: int) -> str:
+        try:
+            n = int(n)
+        except Exception:
+            return str(n)
+        for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
+            if abs(n) < 1024 or unit == "PB":
+                return f"{n:.0f} {unit}" if unit == "B" else f"{n:.2f} {unit}"
+            n /= 1024
 
     def is_dir(p: str) -> bool:
         try:
@@ -371,9 +388,9 @@ def main(page: ft.Page):
         _, path_field, _, _ = current_panel()
         ok, payload, msg = run_feature_safe(feat_analyse, SimpleNamespace(path=path_field.value))
         if ok and isinstance(payload, dict):
-            lines = [f"Total: {payload.get('total_bytes', 0)} bytes", ""]
+            lines = [f"Total: {human_size(payload.get('total_bytes', 0))}", ""]
             for n, s in sorted(payload.get("entries", []), key=lambda x: x[1], reverse=True):
-                lines.append(f"{n}  -  {s} bytes")
+                lines.append(f"{n:<40}  {human_size(s):>12}")
             modal.show_text("Analyse", "\n".join(lines))
         else:
             modal.show_text("Analyse", f"Analyse failed{': ' + msg if msg else ''}")
@@ -473,8 +490,9 @@ def main(page: ft.Page):
             else:
                 lines = []
                 for i, g in enumerate(payload, 1):
-                    lines.append(f"Group #{i} (size={g['size']}, sha256={g['hash']}):")
-                    for p in g["files"]:
+                    size_str = human_size(g.get('size', 0))
+                    lines.append(f"Group #{i}  size={size_str}  sha256={g.get('hash', '')}")
+                    for p in g.get("files", []):
                         lines.append(f"  {p}")
                     lines.append("")
                 modal.show_text("Duplicates", "\n".join(lines))
