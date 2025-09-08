@@ -1,69 +1,90 @@
 import os
 import shutil
+import sys
 import logging
 
-log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
-    filename=os.path.join(log_dir, 'manager.log'),
+    filename=os.path.join(log_dir, "manager.log"),
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding="utf-8",
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run(args):
     """
     Moves a file or directory to a new location.
 
-    If the target file already exists in the destination folder,
-    the operation is aborted with an error message.
+    Behavior:
+      - src must exist
+      - dst must be an existing directory
+      - if a file/dir with the same name exists in dst, operation fails
+      - returns absolute path to moved object on success, None on error
 
-    :param:
-            args: Namespace: Arguments from argparse.
-            src: str: Path to the source file or directory.
-            dst: str: Path to the destination file or folder.
-    :raises:
-            FileNotFoundError: If the source does not exist.
-            FileExistsError: If the file already exists in the destination.
-            NotADirectoryError: Destination is not a directory.
-            PermissionError: Permission denied while moving.
-    :return:
+    Args:
+        args.src (str): Path to the source file or directory
+        args.dst (str): Path to the destination directory
+
+    Returns:
+        str | None: new absolute path on success, None on error
     """
     source = args.src
     destination = args.dst
-
-    logging.info(f'Move command started: src={source}, dst={destination}')
+    logger.info("Move command started: src=%s, dst=%s", source, destination)
 
     if not os.path.exists(source):
-        logging.error(f'Source does not exist: {source}')
-        raise FileNotFoundError(f'Source does not exist: {source}')
+        msg = f"Error: source not found — {source}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
 
     if not os.path.exists(destination):
-        logging.error(f'Destination does not exist: {destination}')
-        raise FileNotFoundError(f'Destination does not exist: {destination}')
+        msg = f"Error: destination not found — {destination}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
 
     if not os.path.isdir(destination):
-        logging.error(f'Destination is not a directory: {destination}')
-        raise NotADirectoryError(f'Destination is not a directory: {destination}')
+        msg = f"Error: destination is not a directory — {destination}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
 
     base_name = os.path.basename(source)
     target_path = os.path.join(destination, base_name)
 
-    # prohibit to move to the same place
+    # prohibit move to same place
     if os.path.abspath(source) == os.path.abspath(target_path):
-        logging.error('Cannot move to the same location. File already exists.')
-        raise FileExistsError('Cannot move to the same location. File already exists.')
+        msg = "Error: cannot move to the same location"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
 
-    # if file already exists
     if os.path.exists(target_path):
-        logging.error(f'File already exists at destination: {target_path}')
-        raise FileExistsError(f'File already exists at destination: {target_path}')
+        msg = f"Error: already exists at destination — {target_path}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
 
     try:
         shutil.move(source, target_path)
-        logging.info(f'Moved successfully: {source} to {destination}')
-        print(f'Moved {source} -> {destination}')
+        logger.info("Moved successfully: %s -> %s", source, target_path)
+        print(f"Moved: {source} -> {target_path}")
+        return os.path.abspath(target_path)
+
     except PermissionError as e:
-        logging.error(f'Permission denied while moving: {e}')
-        raise PermissionError(f'Permission denied while moving: {e}')
+        msg = f"Permission denied while moving {source}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
+
+    except OSError as e:
+        msg = f"OS error while moving {source}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None

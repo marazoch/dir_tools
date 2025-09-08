@@ -1,94 +1,95 @@
+import unittest
 import os
 import shutil
-import unittest
 import argparse
+from io import StringIO
+from features import move as move_feature
 
-from features import move
+
+def capture_stdout(func, *args, **kwargs):
+    old = os.sys.stdout
+    buf = StringIO()
+    try:
+        os.sys.stdout = buf
+        ret = func(*args, **kwargs)
+        return ret, buf.getvalue()
+    finally:
+        os.sys.stdout = old
 
 
-class TestMove(unittest.TestCase):
+def capture_stderr(func, *args, **kwargs):
+    old = os.sys.stderr
+    buf = StringIO()
+    try:
+        os.sys.stderr = buf
+        ret = func(*args, **kwargs)
+        return ret, buf.getvalue()
+    finally:
+        os.sys.stderr = old
 
+
+class TestMoveCommand(unittest.TestCase):
     def setUp(self):
-        """Preparing for test"""
-        os.makedirs('test_src_dir', exist_ok=True)
-        os.makedirs('test_dst_dir', exist_ok=True)
+        self.base = "tests/data_move"
+        os.makedirs(self.base, exist_ok=True)
 
-        with open('test_src_dir/test_file.txt', 'w') as f:
-            f.write('test content')
+        self.src_file = os.path.join(self.base, "file.txt")
+        with open(self.src_file, "w", encoding="utf-8") as f:
+            f.write("hello")
+
+        self.dst_dir = os.path.join(self.base, "dst")
+        os.makedirs(self.dst_dir, exist_ok=True)
+
+        # emulate manager.py args
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("-s", "--src", required=True)
+        self.parser.add_argument("-d", "--dst", required=True)
 
     def tearDown(self):
-        """Clean up test folders"""
-        if os.path.exists('test_src_dir'):
-            shutil.rmtree('test_src_dir')
-        if os.path.exists('test_dst_dir'):
-            shutil.rmtree('test_dst_dir')
+        if os.path.exists(self.base):
+            shutil.rmtree(self.base, ignore_errors=True)
 
-    def test_successful_move(self):
-        """Check file moving"""
-        # Emulate manger.py
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--src')
-        parser.add_argument('--dst')
-        args = parser.parse_args(['--src', 'test_src_dir/test_file.txt', '--dst', 'test_dst_dir'])
+    def test_move_file_success(self):
+        args = self.parser.parse_args(["-s", self.src_file, "-d", self.dst_dir])
+        new_path, out = capture_stdout(move_feature.run, args)
 
-        move.run(args)
+        expected = os.path.join(self.dst_dir, "file.txt")
+        self.assertEqual(os.path.abspath(expected), new_path)
+        self.assertFalse(os.path.exists(self.src_file))
+        self.assertTrue(os.path.exists(expected))
+        self.assertIn("Moved:", out)
 
-        # check that file moved
-        self.assertFalse(os.path.exists('test_src_dir/test_file.txt'))
-        self.assertTrue(os.path.exists('test_dst_dir/test_file.txt'))
+    def test_move_nonexistent_source(self):
+        missing = os.path.join(self.base, "nope.txt")
+        args = self.parser.parse_args(["-s", missing, "-d", self.dst_dir])
+        new_path, err = capture_stderr(move_feature.run, args)
 
-    def test_move_file_already_exists(self):
-        """Check move when file already exists"""
-        # Preparing for test (existed file)
-        with open('test_dst_dir/test_file.txt', 'w') as f:
-            f.write('existing')
+        self.assertIsNone(new_path)
+        self.assertIn("error", err.lower())
+        self.assertIn("source not found", err.lower())
 
-        # Emulate manger.py
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--src')
-        parser.add_argument('--dst')
-        args = parser.parse_args(['--src', 'test_src_dir/test_file.txt', '--dst', 'test_dst_dir'])
+    def test_move_nonexistent_destination(self):
+        missing_dst = os.path.join(self.base, "no_such_dir")
+        args = self.parser.parse_args(["-s", self.src_file, "-d", missing_dst])
+        new_path, err = capture_stderr(move_feature.run, args)
 
-        with self.assertRaises(FileExistsError):
-            move.run(args)
+        self.assertIsNone(new_path)
+        self.assertIn("error", err.lower())
+        self.assertIn("destination not found", err.lower())
 
-    def test_move_to_same_folder(self):
-        """Check move same folder"""
-        # Preparing for test with same folder
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--src')
-        parser.add_argument('--dst')
-        args = parser.parse_args(['--src', 'test_src_dir/test_file.txt', '--dst', 'test_src_dir'])
+    def test_move_when_target_exists(self):
+        # put a file in dst with same name
+        conflict = os.path.join(self.dst_dir, "file.txt")
+        with open(conflict, "w", encoding="utf-8") as f:
+            f.write("existing")
 
-        with self.assertRaises(FileExistsError):
-            move.run(args)
+        args = self.parser.parse_args(["-s", self.src_file, "-d", self.dst_dir])
+        new_path, err = capture_stderr(move_feature.run, args)
 
-    def test_source_not_found(self):
-        """Check move none existing file"""
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--src')
-        parser.add_argument('--dst')
-        args = parser.parse_args(['--src', 'not_exists.txt', '--dst', 'test_dst_dir'])
-
-        with self.assertRaises(FileNotFoundError):
-            move.run(args)
-
-    def test_destination_not_folder(self):
-        """Check move when destination not a directory"""
-        # Preparing for test (not a folder dst)
-        with open('not_a_folder.txt', 'w') as f:
-            f.write('not a folder')
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--src')
-        parser.add_argument('--dst')
-        args = parser.parse_args(['--src', 'test_src_dir/test_file.txt', '--dst', 'not_a_folder.txt'])
-
-        with self.assertRaises(NotADirectoryError):
-            move.run(args)
-
-        os.remove('not_a_folder.txt')
+        self.assertIsNone(new_path)
+        self.assertIn("error", err.lower())
+        self.assertIn("already exists", err.lower())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -2,60 +2,98 @@ import unittest
 import os
 import shutil
 import argparse
-from features import find
+from io import StringIO
+from features import find as find_feature
 
-class TestFind(unittest.TestCase):
+
+def capture_stdout(func, *args, **kwargs):
+    old = os.sys.stdout
+    buf = StringIO()
+    try:
+        os.sys.stdout = buf
+        ret = func(*args, **kwargs)
+        return ret, buf.getvalue()
+    finally:
+        os.sys.stdout = old
+
+
+def capture_stderr(func, *args, **kwargs):
+    old = os.sys.stderr
+    buf = StringIO()
+    try:
+        os.sys.stderr = buf
+        ret = func(*args, **kwargs)
+        return ret, buf.getvalue()
+    finally:
+        os.sys.stderr = old
+
+
+class TestFindCommand(unittest.TestCase):
     def setUp(self):
-        """Preparing for test"""
-        self.test_dir = 'test_find_argparse'
-        os.makedirs(os.path.join(self.test_dir, 'subdir'), exist_ok=True)
+        self.base = "tests/data_find"
+        os.makedirs(self.base, exist_ok=True)
 
-        with open(os.path.join(self.test_dir, 'a.txt'), 'w') as f:
-            f.write('abc')
+        # files: a.txt, b.md, sub/c.txt
+        with open(os.path.join(self.base, "a.txt"), "w", encoding="utf-8") as f:
+            f.write("a")
+        with open(os.path.join(self.base, "b.md"), "w", encoding="utf-8") as f:
+            f.write("b")
 
-        with open(os.path.join(self.test_dir, 'b.md'), 'w') as f:
-            f.write('markdown')
+        sub = os.path.join(self.base, "sub")
+        os.makedirs(sub, exist_ok=True)
+        with open(os.path.join(sub, "c.txt"), "w", encoding="utf-8") as f:
+            f.write("c")
 
-        with open(os.path.join(self.test_dir, 'subdir', 'c.txt'), 'w') as f:
-            f.write('nested')
-
-        # Emulate manager.py
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument('path')
-        self.parser.add_argument('regex')
+        self.parser.add_argument("-p", "--path", required=True)
+        self.parser.add_argument("-r", "--regex", required=True)
 
     def tearDown(self):
-        """Clean up test folders"""
-        shutil.rmtree(self.test_dir)
+        if os.path.exists(self.base):
+            shutil.rmtree(self.base, ignore_errors=True)
 
     def test_find_txt_files(self):
-        """Check file finding .txt"""
-        args = self.parser.parse_args([self.test_dir, r'.*\.txt$'])
-        result = find.run(args)
-        basenames = [os.path.basename(path) for path in result]
-        self.assertIn('a.txt', basenames)
-        self.assertIn('c.txt', basenames)
-        self.assertNotIn('b.md', basenames)
+        args = self.parser.parse_args(["-p", self.base, "-r", r".*\.txt"])
+        matches, out = capture_stdout(find_feature.run, args)
 
-    def test_find_md_files(self):
-        """Check file finding .md"""
-        args = self.parser.parse_args([self.test_dir, r'.*\.md$'])
-        result = find.run(args)
-        basenames = [os.path.basename(path) for path in result]
-        self.assertIn('b.md', basenames)
-        self.assertNotIn('a.txt', basenames)
+        self.assertIsInstance(matches, list)
+        self.assertEqual(len(matches), 2)  # a.txt + sub/c.txt
+        self.assertIn("a.txt", "\n".join(matches))
+        self.assertIn("c.txt", "\n".join(matches))
+        self.assertIn(".txt", out)
 
-    def test_invalid_path(self):
-        """Check file finding with invalid path"""
-        args = self.parser.parse_args(['nonexistent', r'.*\.txt$'])
-        with self.assertRaises(FileNotFoundError):
-            find.run(args)
+    def test_find_no_matches(self):
+        args = self.parser.parse_args(["-p", self.base, "-r", r".*\.pdf"])
+        matches, out = capture_stdout(find_feature.run, args)
+
+        self.assertEqual(matches, [])
+        self.assertIn("No matches", out)
 
     def test_invalid_regex(self):
-        """Check file finding with invalid regex"""
-        args = self.parser.parse_args([self.test_dir, r'*invalid['])
-        with self.assertRaises(ValueError):
-            find.run(args)
+        args = self.parser.parse_args(["-p", self.base, "-r", r"*bad["])
+        matches, err = capture_stderr(find_feature.run, args)
 
-if __name__ == '__main__':
+        self.assertIsNone(matches)
+        self.assertIn("error", err.lower())
+        self.assertIn("invalid regex", err.lower())
+
+    def test_nonexistent_path(self):
+        args = self.parser.parse_args(["-p", "no_such_dir", "-r", r".*"])
+        matches, err = capture_stderr(find_feature.run, args)
+
+        self.assertIsNone(matches)
+        self.assertIn("error", err.lower())
+        self.assertIn("path not found", err.lower())
+
+    def test_not_a_directory(self):
+        file_path = os.path.join(self.base, "a.txt")
+        args = self.parser.parse_args(["-p", file_path, "-r", r".*"])
+        matches, err = capture_stderr(find_feature.run, args)
+
+        self.assertIsNone(matches)
+        self.assertIn("error", err.lower())
+        self.assertIn("not a directory", err.lower())
+
+
+if __name__ == "__main__":
     unittest.main()

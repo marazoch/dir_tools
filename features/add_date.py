@@ -1,100 +1,125 @@
 import os
+import sys
 import datetime
 import logging
 
-log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
-    filename=os.path.join(log_dir, 'manager.log'),
+    filename=os.path.join(log_dir, "manager.log"),
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding="utf-8",
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run(args):
     """
-    Adds the file creation date to the file name.
+    Add the file creation date to filenames.
 
-    If a file path is provided, only that file will be renamed.
-    If a directory is provided:
-        - Without --recursive: only files in the top-level directory are processed.
-        - With --recursive: all files in the directory and its subdirectories are processed.
+    Behavior:
+      - If args.path is a file: rename just this file -> name_YYYY-MM-DD.ext
+      - If args.path is a directory:
+          * without --recursive: process only top-level files
+          * with --recursive: process files in all subdirectories
+      - If a target name already exists -> print error to stderr and skip that file
+      - If a filename already contains the date string -> print 'Skipping ...' and leave it as is
 
-    :param:
-            args: Namespace: Arguments from argparse.
-            path: str: Path to file or directory.
-            recursive: bool: Whether to process directories recursively.
-    :raises:
-            FileNotFoundError: If the given path does not exist.
-            FileExistsError: If the new file name already exists.
-    :return:  filename with date
+    Args:
+        args.path (str): Path to a file or directory
+        args.recursive (bool): Recursive mode for directories
+
+    Returns:
+        list[str] | None: list of successfully renamed file paths; None on fatal path error
     """
     path = args.path
-    recursive = args.recursive
+    recursive = bool(getattr(args, "recursive", False))
 
-    logging.info(f'Add_date command started: path={path}, recursive={recursive}')
+    logger.info("Add_date command started: path=%s, recursive=%s", path, recursive)
 
     if not os.path.exists(path):
-        logging.error(f'Path does not exist: {path}')
-        raise FileNotFoundError(f'Path does not exist: {path}')
+        msg = f"Error: path not found — {path}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
+
+    renamed = []
 
     if os.path.isfile(path):
-        _rename_with_date(file_path=path)
+        new_path = _rename_with_date(path)
+        if new_path:
+            renamed.append(new_path)
     else:
         if recursive:
-            for root, subfolders, files in os.walk(path):
+            for root, _, files in os.walk(path):
                 for f in files:
-                    file_path = os.path.join(root, f)
-                    _rename_with_date(file_path=file_path)
+                    fp = os.path.join(root, f)
+                    new_path = _rename_with_date(fp)
+                    if new_path:
+                        renamed.append(new_path)
         else:
             for f in os.listdir(path):
-                file_path = os.path.join(path, f)
-                if os.path.isfile(file_path):
-                    _rename_with_date(file_path=file_path)
+                fp = os.path.join(path, f)
+                if os.path.isfile(fp):
+                    new_path = _rename_with_date(fp)
+                    if new_path:
+                        renamed.append(new_path)
+
+    print(f"Processed: {len(renamed)} file(s)")
+    logger.info("Add_date completed: %d file(s) renamed", len(renamed))
+    return renamed
 
 
-def _rename_with_date(file_path):
+def _rename_with_date(file_path: str) -> str | None:
     """
-    Renames a file by appending its creation date to the name.
+    Rename a single file by appending its creation date to the name:
+        <name>_YYYY-MM-DD<ext>
 
-    Example:
+    Skips if:
+      - filename already contains the date substring, or
+      - the target name already exists (prints error and returns None).
 
-
-    :param:
-            file_path: str: Path to file or rename.
-            recursive: bool: Whether to process directories recursively.
-    :raises:
-            FileExistsError: If the new file name already exists.
-    :return:
-            Output example:
-            original file: "document.txt"
-            after rename: "document_2025-08-06.txt"
-
+    Returns:
+        str | None: new full path if renamed; None if skipped or error.
     """
     try:
-        creation_time = os.path.getctime(file_path)
-        date_str = datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d')
+        ctime = os.path.getctime(file_path)
+        date_str = datetime.datetime.fromtimestamp(ctime).strftime("%Y-%m-%d")
 
         dir_name = os.path.dirname(file_path)
         base_name = os.path.basename(file_path)
         name, ext = os.path.splitext(base_name)
 
         if date_str in name:
-            logging.info(f'Skipping (already contains date): {file_path}')
-            print(f'Skipping (already contains date): {file_path}')
-            return
+            msg = f"Skipping (already contains date): {file_path}"
+            print(msg)
+            logger.info(msg)
+            return None
 
-        new_name = f'{date_str}_{name}{ext}'
+        new_name = f"{name}_{date_str}{ext}"
         new_path = os.path.join(dir_name, new_name)
 
         if os.path.exists(new_path):
-            logging.error(f'File already exists: {new_path}')
-            raise FileExistsError(f'File already exists: {new_path}')
+            msg = f"Error: target already exists — {new_path}"
+            print(msg, file=sys.stderr)
+            logger.error(msg)
+            return None
 
         os.rename(file_path, new_path)
-        logging.info(f'Renamed: {file_path} to {new_path}')
-        print(f'Renamed: {file_path} to {new_path}')
-    except Exception as e:
-        logging.error(f'Error renaming file {file_path}: {e}')
-        raise
+        print(f"Renamed: {file_path} -> {new_path}")
+        logger.info("Renamed: %s -> %s", file_path, new_path)
+        return new_path
+
+    except PermissionError as e:
+        msg = f"Permission denied while renaming {file_path}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
+    except OSError as e:
+        msg = f"OS error while renaming {file_path}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return None
