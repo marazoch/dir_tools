@@ -8,16 +8,24 @@ No external dependencies required.
 
 ## Features
 
-- Copy, move, and delete files.
-- Count files in a directory.
-- Find files by regex pattern.
-- Add date prefix to filenames.
-- Analyze directory content size.
-- Calculate hash sums (SHA256 or MD5) for files or directories.
-- Find duplicate files by hash.
+- **Copy** — copy files
+- **Move** — move files and directories
+- **Delete** — delete files and directories
+- **Count** — count files in a directory (recursive)
+- **Find** — find files by regular expression
+- **Analyse** — compute total size and per-entry sizes
+- **Add Date** — add creation date to file name(s)
+- **Hashsum** — compute SHA256 or MD5
+- **Duplicates** — find duplicate files (by hash)
+- **Rename** — rename a file or directory (same parent)
+- **New File** — create an empty file
+- **New Folder** — create a directory
 
 ## Examples
-
+### Run GUI:
+```bash
+python gui.py
+```
 ### For help run:
 ```bash
 python manager.py -h
@@ -58,6 +66,21 @@ python manager.py hashsum -p /path/to/file_or_directory -m sha256
 ### Search for duplicates in folder and subfolders
 ```bash
 python manager.py duplicates -p /path/to/directory
+```
+
+### Create empty file
+```bash
+python manager.py mkfile -p path/to/dir -n new.txt
+```
+
+### Create a folder:
+```bash
+python manager.py mkdir -p path/to/dir -n newfolder
+```
+
+### Rename a file:
+```bash
+python manager.py rename -s path/to/file.txt -n newname.txt
 ```
 ## Installation
 
