@@ -1,3 +1,5 @@
 # This project uses only Python standard libraries:
 # os, sys, shutil, argparse, hashlib, logging, etc.
 # No external dependencies required.
+
+flet~=0.28.3

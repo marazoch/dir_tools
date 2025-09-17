@@ -1,15 +1,19 @@
 import os
 import shutil
+import sys
 import logging
 
-log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
-    filename=os.path.join(log_dir, 'manager.log'),
+    filename=os.path.join(log_dir, "manager.log"),
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding="utf-8",
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run(args):
@@ -23,30 +27,40 @@ def run(args):
             FileNotFoundError: If the target does not exist.
             PermissionError: If there is no permission to delete.
             Exception: Target is neither file nor directory.
-    :return:
+    :return: True if successfully deleted, False otherwise.
     """
     target = args.src
-
-    logging.info(f'Delete command started: target={target}')
+    logger.info("Delete command started: target=%s", target)
 
     if not os.path.exists(target):
-        logging.error(f'Target does not exist: {target}')
-        raise FileNotFoundError(f'Target does not exist: {target}')
+        msg = f"Error: path not found — {target}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return False
 
     try:
-        if os.path.isfile(target):
+        if os.path.isfile(target) or os.path.islink(target):
             os.remove(target)
-            logging.info(f"File deleted: {target}")
+            logger.info("File deleted: %s", target)
         elif os.path.isdir(target):
             shutil.rmtree(target)
-            logging.info(f"Directory deleted: {target}")
+            logger.info("Directory deleted: %s", target)
         else:
-            logging.error(f'Target is neither file nor directory: {target}')
-            raise Exception(f'Target is neither file nor directory: {target}')
+            msg = f"Error: target is neither file nor directory — {target}"
+            print(msg, file=sys.stderr)
+            logger.error(msg)
+            return False
     except PermissionError as e:
-        logging.error(f'Permission denied while deleting {target}: {e}')
-        raise PermissionError(f'Permission denied while deleting {target}: {e}')
+        msg = f"Permission denied while deleting {target}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return False
+    except OSError as e:
+        msg = f"OS error while deleting {target}: {e}"
+        print(msg, file=sys.stderr)
+        logger.error(msg)
+        return False
 
-    logging.info(f'Successfully deleted: {target}')
-
-    print(f'Successfully deleted: {target}')
+    logger.info("Successfully deleted: %s", target)
+    print(f"Deleted: {target}")
+    return True
